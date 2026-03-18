@@ -14,6 +14,9 @@ DB_CONFIG = {
     "autocommit":  False,
 }
 
+if os.environ.get("DB_SSL", "false").lower() == "true":
+    DB_CONFIG["ssl"] = {"check_hostname": False}
+
 
 @contextmanager
 def get_db():
