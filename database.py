@@ -34,22 +34,8 @@ def get_db():
 
 
 def init_db():
-    # 先不指定 database，用于确保库存在
-    conn = pymysql.connect(
-        host=DB_CONFIG["host"],
-        port=DB_CONFIG["port"],
-        user=DB_CONFIG["user"],
-        password=DB_CONFIG["password"],
-        charset="utf8mb4",
-        cursorclass=pymysql.cursors.DictCursor,
-    )
+    conn = pymysql.connect(**DB_CONFIG)
     cur = conn.cursor()
-    db_name = DB_CONFIG["database"]
-    cur.execute(
-        f"CREATE DATABASE IF NOT EXISTS `{db_name}` "
-        f"CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
-    )
-    cur.execute(f"USE `{db_name}`")
 
     cur.execute("""
         CREATE TABLE IF NOT EXISTS users (
