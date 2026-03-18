@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional
-from database import get_conn
+from database import get_db
 from auth_utils import hash_password, verify_password, create_token, current_user
 
 router = APIRouter()
@@ -21,18 +21,16 @@ class LoginBody(BaseModel):
 
 @router.post("/register", summary="注册")
 def register(body: RegisterBody):
-    # 简单校验手机号格式（11位数字）
     if not body.phone.isdigit() or len(body.phone) != 11:
         raise HTTPException(400, "请输入正确的11位手机号")
-    with get_conn() as conn:
-        exists = conn.execute("SELECT id FROM users WHERE phone=?", (body.phone,)).fetchone()
-        if exists:
+    with get_db() as cur:
+        cur.execute("SELECT id FROM users WHERE phone=%s", (body.phone,))
+        if cur.fetchone():
             raise HTTPException(400, "该手机号已注册")
-        cur = conn.execute(
-            "INSERT INTO users(username, phone, password_hash, goal_weight) VALUES(?,?,?,?)",
+        cur.execute(
+            "INSERT INTO users(username, phone, password_hash, goal_weight) VALUES(%s,%s,%s,%s)",
             (body.username, body.phone, hash_password(body.password), body.goal_weight)
         )
-        conn.commit()
         user_id = cur.lastrowid
     token = create_token(user_id)
     return {"token": token, "user_id": user_id, "username": body.username}
@@ -40,15 +38,16 @@ def register(body: RegisterBody):
 
 @router.post("/login", summary="登录")
 def login(body: LoginBody):
-    with get_conn() as conn:
-        row = conn.execute("SELECT * FROM users WHERE phone=?", (body.phone,)).fetchone()
+    with get_db() as cur:
+        cur.execute("SELECT * FROM users WHERE phone=%s", (body.phone,))
+        row = cur.fetchone()
     if not row or not verify_password(body.password, row["password_hash"]):
         raise HTTPException(401, "手机号或密码错误")
     token = create_token(row["id"])
     return {
-        "token": token,
-        "user_id": row["id"],
-        "username": row["username"],
+        "token":       token,
+        "user_id":     row["id"],
+        "username":    row["username"],
         "goal_weight": row["goal_weight"],
     }
 

@@ -5,7 +5,7 @@ import base64
 import time
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from database import get_conn
+from database import get_db
 
 SECRET_KEY = "CHANGE_ME_IN_PRODUCTION_USE_ENV_VAR"  # 生产环境务必改成随机长字符串
 TOKEN_EXPIRE_SECONDS = 60 * 60 * 24 * 7  # 7天
@@ -51,8 +51,9 @@ bearer = HTTPBearer()
 def current_user(cred: HTTPAuthorizationCredentials = Depends(bearer)):
     data = decode_token(cred.credentials)
     user_id = data["sub"]
-    with get_conn() as conn:
-        row = conn.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
+    with get_db() as cur:
+        cur.execute("SELECT * FROM users WHERE id=%s", (user_id,))
+        row = cur.fetchone()
     if not row:
         raise HTTPException(status_code=401, detail="用户不存在")
-    return dict(row)
+    return row
