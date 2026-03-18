@@ -1,7 +1,7 @@
 import sqlite3
 import os
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "checkin.db")
+DB_PATH = "/tmp/checkin.db" if os.environ.get("VERCEL") else os.path.join(os.path.dirname(__file__), "checkin.db")
 
 
 def get_conn():
