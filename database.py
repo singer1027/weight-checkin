@@ -1,12 +1,13 @@
 import sqlite3
+import os
 
-DB_PATH = "/tmp/checkin.db"
+DB_PATH = os.path.join(os.path.dirname(__file__), "checkin.db")
 
 
 def get_conn():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA journal_mode=DELETE")
     conn.execute("PRAGMA foreign_keys=ON")
     return conn
 
@@ -16,19 +17,19 @@ def init_db():
         # 迁移1：email → phone
         cols = [row[1] for row in conn.execute("PRAGMA table_info(users)").fetchall()]
         if cols and "email" in cols and "phone" not in cols:
-            print("⚙️  迁移 email → phone ...")
+            print("[migration] email -> phone ...")
             conn.execute("ALTER TABLE users RENAME COLUMN email TO phone")
             conn.commit()
-            print("✅ 迁移完成")
+            print("[migration] done")
 
         # 迁移2：plans 表新增 start_weight / goal_weight
         plan_cols = [row[1] for row in conn.execute("PRAGMA table_info(plans)").fetchall()]
         if plan_cols and "start_weight" not in plan_cols:
-            print("⚙️  plans 表新增 start_weight / goal_weight ...")
+            print("[migration] plans add start_weight / goal_weight ...")
             conn.execute("ALTER TABLE plans ADD COLUMN start_weight REAL")
             conn.execute("ALTER TABLE plans ADD COLUMN goal_weight  REAL")
             conn.commit()
-            print("✅ 迁移完成")
+            print("[migration] done")
 
         conn.executescript("""
         -- 用户表
@@ -80,4 +81,4 @@ def init_db():
         );
         """)
         conn.commit()
-    print("✅ 数据库初始化完成")
+    print("[db] init done")
