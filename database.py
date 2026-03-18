@@ -1,7 +1,6 @@
 import sqlite3
-from pathlib import Path
 
-DB_PATH = Path(__file__).parent / "checkin.db"
+DB_PATH = "/tmp/checkin.db"
 
 
 def get_conn():
