@@ -41,7 +41,7 @@ def payment_info(user: dict = Depends(current_user)):
 
 
 # ── 管理员激活用户（你专用）─────────────────────────────
-@router.post("/activate", summary="管理员激活用户")
+@router.get("/activate", summary="管理员激活用户")
 def activate_user(
     code:   str = Query(..., description="用户验证码"),
     secret: str = Query(..., description="管理员密钥"),
