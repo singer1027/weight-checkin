@@ -49,14 +49,16 @@ def init_db():
             avatar_url    TEXT,
             is_paid       TINYINT      NOT NULL DEFAULT 0,
             paid_at       DATETIME,
+            verify_code   VARCHAR(16),
             created_at    DATETIME     NOT NULL DEFAULT NOW()
         )
     """)
 
     cur.execute("""
         ALTER TABLE users
-        ADD COLUMN IF NOT EXISTS is_paid  TINYINT  NOT NULL DEFAULT 0,
-        ADD COLUMN IF NOT EXISTS paid_at  DATETIME
+        ADD COLUMN IF NOT EXISTS is_paid     TINYINT     NOT NULL DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS paid_at     DATETIME,
+        ADD COLUMN IF NOT EXISTS verify_code VARCHAR(16)
     """)
 
     cur.execute("""
