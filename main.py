@@ -6,6 +6,7 @@ from database import init_db
 import auth_router
 import plan_router
 import checkin_router
+import payment_router
 import os
 
 init_db()
@@ -26,6 +27,7 @@ app.add_middleware(
 app.include_router(auth_router.router,    prefix="/auth",     tags=["认证"])
 app.include_router(plan_router.router,    prefix="/plans",    tags=["计划"])
 app.include_router(checkin_router.router, prefix="/checkins", tags=["打卡"])
+app.include_router(payment_router.router, prefix="/payment",  tags=["支付"])
 
 @app.get("/", include_in_schema=False)
 def root():

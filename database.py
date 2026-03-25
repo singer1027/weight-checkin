@@ -15,7 +15,9 @@ DB_CONFIG = {
 }
 
 if os.environ.get("DB_SSL", "false").lower() == "true":
-    DB_CONFIG["ssl"] = {"check_hostname": False}
+    DB_CONFIG["ssl"] = {"ca": "/etc/ssl/certs/ca-certificates.crt"}
+    DB_CONFIG["ssl_verify_cert"] = True
+    DB_CONFIG["ssl_verify_identity"] = False
 
 
 @contextmanager
@@ -45,7 +47,29 @@ def init_db():
             password_hash VARCHAR(128) NOT NULL,
             goal_weight   FLOAT,
             avatar_url    TEXT,
+            is_paid       TINYINT      NOT NULL DEFAULT 0,
+            paid_at       DATETIME,
             created_at    DATETIME     NOT NULL DEFAULT NOW()
+        )
+    """)
+
+    cur.execute("""
+        ALTER TABLE users
+        ADD COLUMN IF NOT EXISTS is_paid  TINYINT  NOT NULL DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS paid_at  DATETIME
+    """)
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS orders (
+            id            INT          PRIMARY KEY AUTO_INCREMENT,
+            out_trade_no  VARCHAR(64)  NOT NULL UNIQUE,
+            user_id       INT          NOT NULL,
+            amount        INT          NOT NULL DEFAULT 99,
+            status        VARCHAR(16)  NOT NULL DEFAULT 'pending',
+            transaction_id VARCHAR(64),
+            created_at    DATETIME     NOT NULL DEFAULT NOW(),
+            paid_at       DATETIME,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         )
     """)
 
