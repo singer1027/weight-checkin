@@ -8,7 +8,6 @@ from auth_utils import current_user
 
 router = APIRouter()
 
-ADMIN_SECRET = os.environ.get("ADMIN_SECRET", "change_me_admin_secret")
 
 
 def _gen_code() -> str:
@@ -46,7 +45,8 @@ def activate_user(
     code:   str = Query(..., description="用户验证码"),
     secret: str = Query(..., description="管理员密钥"),
 ):
-    if secret != ADMIN_SECRET:
+    admin_secret = os.environ.get("ADMIN_SECRET", "change_me_admin_secret")
+    if secret != admin_secret:
         raise HTTPException(403, "无权操作")
 
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
