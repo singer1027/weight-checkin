@@ -2,6 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from database import init_db
 import auth_router
 import plan_router
@@ -28,6 +29,11 @@ app.include_router(auth_router.router,    prefix="/auth",     tags=["认证"])
 app.include_router(plan_router.router,    prefix="/plans",    tags=["计划"])
 app.include_router(checkin_router.router, prefix="/checkins", tags=["打卡"])
 app.include_router(payment_router.router, prefix="/payment",  tags=["支付"])
+
+@app.get("/wechat_qr.png", include_in_schema=False)
+def wechat_qr():
+    path = os.path.join(os.path.dirname(__file__), "wechat_qr.png")
+    return FileResponse(path, media_type="image/png")
 
 @app.get("/", include_in_schema=False)
 def root():

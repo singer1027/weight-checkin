@@ -580,6 +580,37 @@
   }
   .auth-overlay.hidden { display: none; }
 
+  /* ── 付费墙 ── */
+  #pay-overlay {
+    position: fixed; inset: 0; z-index: 999;
+    background: rgba(44,36,32,0.7);
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px;
+  }
+  #pay-overlay.hidden { display: none; }
+  .pay-card {
+    background: var(--warm-white);
+    border-radius: 20px;
+    padding: 36px 32px;
+    max-width: 380px; width: 100%;
+    text-align: center;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.18);
+  }
+  .pay-card h2 { font-size: 20px; color: var(--charcoal); margin-bottom: 6px; }
+  .pay-card p  { font-size: 13px; color: var(--mid); margin-bottom: 20px; }
+  .pay-price   { font-size: 42px; font-weight: 700; color: var(--rose); margin-bottom: 16px; }
+  .pay-price span { font-size: 18px; }
+  .pay-qr      { width: 200px; height: 200px; margin: 0 auto 16px; border-radius: 12px; border: 2px solid var(--border); object-fit: cover; }
+  .pay-code-box {
+    background: var(--highlight); border-radius: 10px;
+    padding: 12px 16px; margin-bottom: 12px;
+  }
+  .pay-code-box .label { font-size: 12px; color: var(--mid); margin-bottom: 4px; }
+  .pay-code    { font-size: 24px; font-weight: 700; letter-spacing: 4px; color: var(--deep-rose); font-family: 'DM Mono', monospace; }
+  .pay-tip     { font-size: 12px; color: var(--mid); margin-bottom: 20px; line-height: 1.6; }
+  .pay-btn     { width: 100%; padding: 14px; border-radius: 10px; border: none; background: var(--sage); color: #fff; font-size: 15px; cursor: pointer; }
+  .pay-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
   .auth-card {
     background: var(--warm-white);
     border-radius: 18px;
@@ -698,6 +729,22 @@
 </style>
 </head>
 <body>
+
+<!-- ── 付费墙 ─────────────────────────────────────── -->
+<div id="pay-overlay" class="hidden">
+  <div class="pay-card">
+    <h2>🔓 解锁完整功能</h2>
+    <p>注册成功！支付一次，永久使用</p>
+    <div class="pay-price"><span>¥</span>0.99</div>
+    <img class="pay-qr" src="/wechat_qr.png" alt="微信收款码" />
+    <div class="pay-code-box">
+      <div class="label">转账备注请填写以下验证码</div>
+      <div class="pay-code" id="pay-code">------</div>
+    </div>
+    <div class="pay-tip">扫码支付 ¥0.99 后，在转账备注中填入上方验证码<br>支付完成后点击下方按钮</div>
+    <button class="pay-btn" id="pay-check-btn" onclick="checkPaidStatus()">我已完成支付</button>
+  </div>
+</div>
 
 <!-- ── 登录/注册弹窗 ─────────────────────────────── -->
 <div class="auth-overlay" id="auth-overlay">
@@ -966,7 +1013,39 @@ function onAuthSuccess(data) {
   document.getElementById('auth-overlay').classList.add('hidden');
   document.getElementById('user-name').textContent = data.username;
   document.getElementById('user-bar').style.display = 'flex';
-  loadPlans();
+  checkPaymentWall();
+}
+
+async function checkPaymentWall() {
+  try {
+    const info = await api('GET', '/payment/info');
+    if (info.is_paid) {
+      document.getElementById('pay-overlay').classList.add('hidden');
+      loadPlans();
+    } else {
+      document.getElementById('pay-code').textContent = info.verify_code;
+      document.getElementById('pay-overlay').classList.remove('hidden');
+    }
+  } catch(e) {
+    loadPlans(); // 付费接口异常时不阻断使用
+  }
+}
+
+async function checkPaidStatus() {
+  const btn = document.getElementById('pay-check-btn');
+  btn.disabled = true; btn.textContent = '验证中…';
+  try {
+    const res = await api('GET', '/payment/status');
+    if (res.is_paid) {
+      document.getElementById('pay-overlay').classList.add('hidden');
+      loadPlans();
+    } else {
+      btn.textContent = '未检测到付款，请稍后再试';
+      setTimeout(() => { btn.disabled = false; btn.textContent = '我已完成支付'; }, 3000);
+    }
+  } catch(e) {
+    btn.disabled = false; btn.textContent = '我已完成支付';
+  }
 }
 
 function doLogout() {
@@ -1477,7 +1556,7 @@ async function init() {
     document.getElementById('user-name').textContent = me.username;
     document.getElementById('user-bar').style.display = 'flex';
     document.getElementById('auth-overlay').classList.add('hidden');
-    await loadPlans();
+    await checkPaymentWall();
   } catch(e) {
     // token 过期
     localStorage.removeItem('slim_token');
